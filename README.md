@@ -1,6 +1,6 @@
 # Atlas Search CLI
 
-A command-line interface for querying MongoDB Atlas Search.
+A command-line interface for querying MongoDB Atlas Search. Written by Google Gemini CLI. Guided by John Underwood.
 
 ## Installation
 
