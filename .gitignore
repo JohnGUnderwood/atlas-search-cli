@@ -1,9 +1,9 @@
 # Virtual Environment
-venv/
+venc/
 
 # Python cache
-*.pyc
-__pycache__/
+python/*.pyc
+python/__pycache__/
 
 # Environment variables
 .env
@@ -34,3 +34,7 @@ credentials.json
 build/
 dist/
 *.egg-info/
+
+# Go-specific ignores
+go-port/atlas-search
+go-port/*.test

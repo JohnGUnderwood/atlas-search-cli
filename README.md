@@ -4,6 +4,10 @@ A command-line interface for querying MongoDB Atlas Search. Written by Google Ge
 
 ## Installation
 
+This CLI is available in two variants: Python and Go.
+
+### Python Variant
+
 This project uses a `setup.py` file to make the CLI installable. This allows you to run the CLI from anywhere in your terminal using the `atlas-search` command.
 
 1. Clone the repository:
@@ -23,6 +27,30 @@ This project uses a `setup.py` file to make the CLI installable. This allows you
    ```bash
    pip install -e .
    ```
+
+### Go Variant
+
+The Go variant provides a single compiled executable.
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-username/atlas-search-cli.git
+   cd atlas-search-cli
+   ```
+
+2. Build the Go executable:
+   ```bash
+   cd go
+   go mod tidy
+   go build -o atlas-search
+   cd ..
+   ```
+
+3. Run the executable:
+   ```bash
+   ./go/atlas-search
+   ```
+   (Optional) For easier access, you can move the `atlas-search` executable to a directory in your system's PATH.
 
 ## Configuration
 
