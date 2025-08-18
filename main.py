@@ -11,9 +11,16 @@ def main():
     parser.add_argument('--db', type=str, help='Database name')
     parser.add_argument('--coll', type=str, help='Collection name')
     parser.add_argument('--searchAggFile', type=str, help='Path to a JSON file containing the search aggregation pipeline')
+    parser.add_argument('--vector', action='store_true', help='Perform a vector search')
+    parser.add_argument('--vectorField', type=str, help='The field to search for vectors. Required when --vector is used.')
+    parser.add_argument('--searchField', type=str, action='append', help='The field to search for text. Can be specified multiple times.')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
 
     args = parser.parse_args()
+
+    if args.vector and not args.vectorField:
+        print("Error: --vectorField is required when --vector is used.", file=sys.stderr)
+        sys.exit(1)
 
     if not args.connectionString:
         print("Error: Connection string is required.", file=sys.stderr)
@@ -52,17 +59,27 @@ def main():
             except json.JSONDecodeError:
                 print(f"Error: Invalid JSON in aggregation file '{args.searchAggFile}'", file=sys.stderr)
                 sys.exit(1)
+        elif args.vector:
+            # Vector search pipeline
+            pipeline = [
+                {
+                    "$vectorSearch": {
+                        "index": "vector_index",
+                        "query": args.query,
+                        "path": args.vectorField
+                    }
+                }
+            ]
         else:
             # Default search pipeline
+            path = {"wildcard": "*"} if not args.searchField else args.searchField
             pipeline = [
                 {
                     "$search": {
                         "index": "default",
                         "text": {
                             "query": args.query,
-                            "path": {
-                                "wildcard": "*"
-                            }
+                            "path": path
                         }
                     }
                 }
