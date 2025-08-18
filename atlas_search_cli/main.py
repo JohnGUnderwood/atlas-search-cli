@@ -38,6 +38,10 @@ def handle_config_set(args):
         config['field'] = args.field
     if args.projectField:
         config['projectField'] = args.projectField
+    if args.voyageAPIKey:
+        config['voyageAPIKey'] = args.voyageAPIKey
+    if args.voyageModel:
+        config['voyageModel'] = args.voyageModel
     save_config(args.name, config)
     print(f"Configuration '{args.name}' saved.")
 
@@ -106,14 +110,18 @@ def handle_vector_search(args):
     if not field:
         print("Error: --field is required for vector search.", file=sys.stderr)
         sys.exit(1)
+    elif isinstance(field, list):
+        if len(field) > 1:
+            print("Warning: Multiple fields specified for vector search. Only the first field will be used.", file=sys.stderr)
+        field = field[0]
 
     if args.embedWithVoyage:
-        api_key = args.voyageAPIKey if args.voyageAPIKey else os.environ.get("VOYAGE_API_KEY")
+        api_key = args.voyageAPIKey if args.voyageAPIKey else current_config.get('voyageAPIKey', os.environ.get("VOYAGE_API_KEY"))
         if not api_key:
             print("Error: Voyage AI API key is required. Set the VOYAGE_API_KEY environment variable or use the --voyageAPIKey flag.", file=sys.stderr)
             sys.exit(1)
         vo = voyageai.Client(api_key=api_key)
-        embedding = vo.embed([args.query], model=args.voyageModel).embeddings[0]
+        embedding = vo.embed([args.query], model=args.voyageModel if args.voyageModel else current_config.get('voyageModel', 'voyage-2')).embeddings[0]
         query_vector = embedding
         query_key = "queryVector"
     else:
@@ -180,6 +188,8 @@ def main():
     config_set_parser.add_argument('--index', type=str, help='The name of the search index to use.')
     config_set_parser.add_argument('--field', type=str, action='append', help='The field to search. Can be specified multiple times.')
     config_set_parser.add_argument('--projectField', type=str, action='append', help='The field to project. Can be specified multiple times.')
+    config_set_parser.add_argument('--voyageAPIKey', type=str, help='The Voyage AI API key.')
+    config_set_parser.add_argument('--voyageModel', type=str, help='The Voyage AI model to use for embedding.')
     config_set_parser.set_defaults(func=handle_config_set)
 
     # Config list sub-subcommand

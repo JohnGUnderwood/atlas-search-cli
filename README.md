@@ -51,6 +51,8 @@ atlas-search config set my_default_config \
 - `--index`: The name of the search index to use.
 - `--field`: The field to search. Can be specified multiple times.
 - `--projectField`: The field to project. Can be specified multiple times.
+- `--voyageAPIKey`: The Voyage AI API key.
+- `--voyageModel`: The Voyage AI model to use for embedding.
 
 ### Listing Configurations
 
