@@ -26,17 +26,51 @@ This project uses a `setup.py` file to make the CLI installable. This allows you
 
 ## Configuration
 
-Before you can run searches, you need to configure the CLI with your MongoDB connection details. You can do this using the `config` command:
+The CLI now supports named configurations. You can set and manage different sets of connection details and search parameters.
+
+### Setting a Configuration
+
+Use the `config set` command to create or update a named configuration. This will save the configuration to a file in `~/.atlas-search-cli/configs/<name>.json`.
 
 ```bash
-atlas-search config --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>"
+atlas-search config set my_default_config \
+  --connectionString "<your_connection_string>" \
+  --db "<database_name>" \
+  --coll "<collection_name>" \
+  --index "my_search_index" \
+  --field "title" \
+  --projectField "title" --projectField "plot"
 ```
 
-This will save the configuration to a file in `~/.atlas-search-cli/config.json`. You can override these settings at any time by passing the corresponding flags to the `lexical` or `vector` commands.
+**Arguments for `config set`:**
+
+- `name`: The name of the configuration (e.g., `my_default_config`).
+- `--connectionString`: MongoDB connection string.
+- `--db`: Database name.
+- `--coll`: Collection name.
+- `--index`: The name of the search index to use.
+- `--field`: The field to search. Can be specified multiple times.
+- `--projectField`: The field to project. Can be specified multiple times.
+
+### Listing Configurations
+
+To see all your saved configurations, use the `config list` command:
+
+```bash
+atlas-search config list
+```
 
 ## Usage
 
 The CLI has two main commands for searching: `lexical` and `vector`.
+
+### Using a Named Configuration
+
+You can use a saved configuration with the `lexical` or `vector` commands using the `--config` flag. Any command-line arguments you provide will override the values from the named configuration.
+
+```bash
+atlas-search lexical "your search query" --config my_default_config
+```
 
 ### Lexical Search
 
@@ -49,6 +83,7 @@ atlas-search lexical "your search query"
 **Arguments:**
 
 - `query`: The search query string.
+- `--config`: The name of the configuration to use.
 - `--field`: The field to search. Can be specified multiple times. Defaults to wildcard (`*`).
 - `--projectField`: The field to project. Can be specified multiple times.
 - `--index`: The name of the search index to use. Defaults to `default`.
@@ -68,13 +103,14 @@ atlas-search vector "your search query" --field "<your_vector_field>"
 **Arguments:**
 
 - `query`: The search query string.
+- `--config`: The name of the configuration to use.
 - `--field`: The field to search for vectors. This is a required argument.
 - `--projectField`: The field to project. Can be specified multiple times.
 - `--index`: The name of the search index to use. Defaults to `vector_index`.
 - `--numCandidates`: Number of candidates to consider for approximate vector search. Defaults to 10.
 - `--limit`: Number of results to return. Defaults to 10.
 - `--embedWithVoyage`: Embed the query with Voyage AI.
-- `--voyageModel`: The Voyage AI model to use for embedding. Defaults to `voyage-3.5`.
+- `--voyageModel`: The Voyage AI model to use for embedding. Defaults to `voyage-2`.
 - `--voyageAPIKey`: The Voyage AI API key. Defaults to the `VOYAGE_API_KEY` environment variable.
 - `--connectionString`: MongoDB connection string. Overrides the configured value.
 - `--db`: Database name. Overrides the configured value.
