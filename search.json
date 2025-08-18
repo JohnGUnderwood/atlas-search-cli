@@ -1,0 +1,20 @@
+[
+    {
+        "$search": {
+            "index": "default",
+            "text": {
+                "query": "%%SEARCH_QUERY%%",
+                "path": {
+                    "wildcard": "*"
+                }
+            }
+        }
+    },
+    {
+        "$project": {
+            "_id": 0,
+            "title": 1,
+            "plot": 1
+        }
+    }
+]

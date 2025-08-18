@@ -1,0 +1,30 @@
+# Virtual Environment
+venv/
+
+# Python cache
+*.pyc
+__pycache__/
+
+# Environment variables
+.env
+
+# Configuration files
+config.ini
+
+# Sensitive data
+*.pem
+credentials.json
+*api_key*
+*connection_string*
+
+# IDE files
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+
+# AI-assisted coding files
+.cursor/
+.gemini/
+.github/copilot/
