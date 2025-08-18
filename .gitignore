@@ -10,6 +10,7 @@ __pycache__/
 
 # Configuration files
 config.ini
+config.json
 
 # Sensitive data
 *.pem
