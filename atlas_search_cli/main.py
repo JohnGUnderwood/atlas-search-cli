@@ -121,7 +121,7 @@ def handle_vector_search(args):
             print("Error: Voyage AI API key is required. Set the VOYAGE_API_KEY environment variable or use the --voyageAPIKey flag.", file=sys.stderr)
             sys.exit(1)
         vo = voyageai.Client(api_key=api_key)
-        embedding = vo.embed([args.query], model=args.voyageModel if args.voyageModel else current_config.get('voyageModel', 'voyage-2')).embeddings[0]
+        embedding = vo.embed([args.query], model=args.voyageModel if args.voyageModel else current_config.get('voyageModel', 'voyage-3.5')).embeddings[0]
         query_vector = embedding
         query_key = "queryVector"
     else:
@@ -219,7 +219,7 @@ def main():
     vector_parser.add_argument('--numCandidates', type=int, default=10, help='Number of candidates to consider for approximate vector search.')
     vector_parser.add_argument('--limit', type=int, default=10, help='Number of results to return.')
     vector_parser.add_argument('--embedWithVoyage', action='store_true', help='Embed the query with Voyage AI.')
-    vector_parser.add_argument('--voyageModel', type=str, default='voyage-2', help='The Voyage AI model to use for embedding.')
+    vector_parser.add_argument('--voyageModel', type=str, default='voyage-3.5', help='The Voyage AI model to use for embedding.')
     vector_parser.add_argument('--voyageAPIKey', type=str, help='The Voyage AI API key. Defaults to the VOYAGE_API_KEY environment variable.')
     vector_parser.add_argument('--connectionString', type=str, help='MongoDB connection string')
     vector_parser.add_argument('--db', type=str, help='Database name')
