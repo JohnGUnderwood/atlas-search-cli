@@ -112,7 +112,7 @@ atlas-search vector "your search query" --field "<your_vector_field>"
 - `--numCandidates`: Number of candidates to consider for approximate vector search. Defaults to 10.
 - `--limit`: Number of results to return. Defaults to 10.
 - `--embedWithVoyage`: Embed the query with Voyage AI.
-- `--voyageModel`: The Voyage AI model to use for embedding. Defaults to `voyage-3.5`.
+- `--voyageModel`: The Voyage AI model to use for embedding. If not specified, it will attempt to use the value from the configuration, or default to `voyage-3.5`.
 - `--voyageAPIKey`: The Voyage AI API key. Defaults to the `VOYAGE_API_KEY` environment variable.
 - `--connectionString`: MongoDB connection string. Overrides the configured value.
 - `--db`: Database name. Overrides the configured value.
