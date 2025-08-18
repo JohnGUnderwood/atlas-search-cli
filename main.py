@@ -5,6 +5,9 @@ import sys
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, OperationFailure
 
+import os
+import voyageai
+
 def main():
     parser = argparse.ArgumentParser(description='CLI for MongoDB Atlas Search')
     parser.add_argument('query', type=str, help='The search query string')
@@ -15,10 +18,13 @@ def main():
     parser.add_argument('--vector', action='store_true', help='Perform a vector search')
     parser.add_argument('--vectorField', type=str, help='The field to search for vectors. Required when --vector is used.')
     parser.add_argument('--searchField', type=str, action='append', help='The field to search for text. Can be specified multiple times.')
+    parser.add_argument('--projectField', type=str, action='append', help='The field to project. Can be specified multiple times.')
     parser.add_argument('--index', type=str, help='The name of the search index to use.')
     parser.add_argument('--numCandidates', type=int, default=10, help='Number of candidates to consider for approximate vector search.')
     parser.add_argument('--limit', type=int, default=10, help='Number of results to return.')
-    parser.add_argument('--projectField', type=str, action='append', help='The field to project. Can be specified multiple times.')
+    parser.add_argument('--embedWithVoyage', action='store_true', help='Embed the query with Voyage AI.')
+    parser.add_argument('--voyageAIModel', type=str, default='voyage-2', help='The Voyage AI model to use for embedding.')
+    parser.add_argument('--voyageAIAPIKey', type=str, help='The Voyage AI API key. Defaults to the VOYAGE_API_KEY environment variable.')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
 
     args = parser.parse_args()
@@ -67,11 +73,24 @@ def main():
         elif args.vector:
             # Vector search pipeline
             index = args.index if args.index else "vector_index"
+            if args.embedWithVoyage:
+                api_key = args.voyageAIAPIKey if args.voyageAIAPIKey else os.environ.get("VOYAGE_API_KEY")
+                if not api_key:
+                    print("Error: Voyage AI API key is required. Set the VOYAGE_API_KEY environment variable or use the --voyageAIAPIKey flag.", file=sys.stderr)
+                    sys.exit(1)
+                vo = voyageai.Client(api_key=api_key)
+                embedding = vo.embed([args.query], model=args.voyageAIModel).embeddings[0]
+                query_vector = embedding
+                query_key = "queryVector"
+            else:
+                query_vector = args.query
+                query_key = "query"
+
             pipeline = [
                 {
                     "$vectorSearch": {
                         "index": index,
-                        "query": args.query,
+                        query_key: query_vector,
                         "path": args.vectorField,
                         "numCandidates": args.numCandidates,
                         "limit": args.limit

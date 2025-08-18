@@ -101,6 +101,18 @@ source venv/bin/activate
 
 The best way to handle field projection without user input is to not project any fields by default. This returns the full document, and you can then use tools like `jq` to parse the JSON and extract the fields you need. This is a common and flexible approach for command-line tools.
 
+### Embedding with Voyage AI
+
+To embed your query using Voyage AI and perform a vector search with the generated vector, use the `--embedWithVoyage` flag. You will need to provide your Voyage AI API key via the `VOYAGE_API_KEY` environment variable or the `--voyageAIAPIKey` flag.
+
+**Command:**
+
+```bash
+export VOYAGE_API_KEY="<your_voyage_ai_api_key>"
+source venv/bin/activate
+./main.py "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>" --vector --vectorField "<your_vector_field>" --embedWithVoyage
+```
+
 ### Arguments
 
 - `query`: The search query string.
@@ -115,4 +127,7 @@ The best way to handle field projection without user input is to not project any
 - `--index`: (Optional) The name of the search index to use.
 - `--numCandidates`: (Optional) Number of candidates to consider for approximate vector search. Defaults to 10.
 - `--limit`: (Optional) Number of results to return. Defaults to 10.
+- `--embedWithVoyage`: (Optional) Embed the query with Voyage AI.
+- `--voyageAIModel`: (Optional) The Voyage AI model to use for embedding. Defaults to `voyage-2`.
+- `--voyageAIAPIKey`: (Optional) The Voyage AI API key. Defaults to the `VOYAGE_API_KEY` environment variable.
 - `--verbose`: (Optional) Enable verbose logging to see the executed aggregation pipeline.
