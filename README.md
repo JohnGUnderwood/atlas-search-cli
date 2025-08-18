@@ -87,7 +87,7 @@ atlas-search lexical "your search query"
 - `query`: The search query string.
 - `--config`: The name of the configuration to use.
 - `--field`: The field to search. Can be specified multiple times. Defaults to wildcard (`*`).
-- `--projectField`: The field to project. Can be specified multiple times.
+- `--projectField`: The field to project. Can be specified multiple times. If a configuration is used, these fields will be added to any `projectField` values defined in the configuration.
 - `--index`: The name of the search index to use. Defaults to `default`.
 - `--connectionString`: MongoDB connection string. Overrides the configured value.
 - `--db`: Database name. Overrides the configured value.
@@ -107,7 +107,7 @@ atlas-search vector "your search query" --field "<your_vector_field>"
 - `query`: The search query string.
 - `--config`: The name of the configuration to use.
 - `--field`: The field to search for vectors. This is a required argument.
-- `--projectField`: The field to project. Can be specified multiple times.
+- `--projectField`: The field to project. Can be specified multiple times. If a configuration is used, these fields will be added to any `projectField` values defined in the configuration.
 - `--index`: The name of the search index to use. Defaults to `vector_index`.
 - `--numCandidates`: Number of candidates to consider for approximate vector search. Defaults to 10.
 - `--limit`: Number of results to return. Defaults to 10.

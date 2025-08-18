@@ -70,7 +70,9 @@ def handle_lexical_search(args):
 
     path = args.field if args.field else current_config.get('field', {"wildcard": "*"})
     index = args.index if args.index else current_config.get('index', "default")
-    project_fields = args.projectField if args.projectField else current_config.get('projectField', [])
+    config_project_fields = current_config.get('projectField', [])
+    cli_project_fields = args.projectField if args.projectField else []
+    project_fields = list(set(config_project_fields + cli_project_fields))
 
     pipeline = [
         {
@@ -81,6 +83,9 @@ def handle_lexical_search(args):
                     "path": path
                 }
             }
+        },
+        {
+            "$limit": args.limit
         }
     ]
 
@@ -105,7 +110,9 @@ def handle_vector_search(args):
 
     index = args.index if args.index else current_config.get('index', "vector_index")
     field = args.field if args.field else current_config.get('field')
-    project_fields = args.projectField if args.projectField else current_config.get('projectField', [])
+    config_project_fields = current_config.get('projectField', [])
+    cli_project_fields = args.projectField if args.projectField else []
+    project_fields = list(set(config_project_fields + cli_project_fields))
 
     if not field:
         print("Error: --field is required for vector search.", file=sys.stderr)
@@ -134,7 +141,7 @@ def handle_vector_search(args):
                 "index": index,
                 query_key: query_vector,
                 "path": field,
-                "numCandidates": args.numCandidates,
+                "numCandidates": args.numCandidates if args.numCandidates else 10 * args.limit,
                 "limit": args.limit
             }
         }
@@ -203,6 +210,7 @@ def main():
     lexical_parser.add_argument('--field', type=str, action='append', help='The field to search. Can be specified multiple times.')
     lexical_parser.add_argument('--projectField', type=str, action='append', help='The field to project. Can be specified multiple times.')
     lexical_parser.add_argument('--index', type=str, help='The name of the search index to use.')
+    lexical_parser.add_argument('--limit', type=int, default=10, help='Number of results to return.')
     lexical_parser.add_argument('--connectionString', type=str, help='MongoDB connection string')
     lexical_parser.add_argument('--db', type=str, help='Database name')
     lexical_parser.add_argument('--coll', type=str, help='Collection name')
@@ -216,7 +224,7 @@ def main():
     vector_parser.add_argument('--field', type=str, help='The field to search for vectors.')
     vector_parser.add_argument('--projectField', type=str, action='append', help='The field to project. Can be specified multiple times.')
     vector_parser.add_argument('--index', type=str, help='The name of the search index to use.')
-    vector_parser.add_argument('--numCandidates', type=int, default=10, help='Number of candidates to consider for approximate vector search.')
+    vector_parser.add_argument('--numCandidates', type=int, default=100, help='Number of candidates to consider for approximate vector search.')
     vector_parser.add_argument('--limit', type=int, default=10, help='Number of results to return.')
     vector_parser.add_argument('--embedWithVoyage', action='store_true', help='Embed the query with Voyage AI.')
     vector_parser.add_argument('--voyageModel', type=str, default='voyage-3.5', help='The Voyage AI model to use for embedding.')
