@@ -28,3 +28,8 @@ credentials.json
 .cursor/
 .gemini/
 .github/copilot/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/

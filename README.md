@@ -4,17 +4,24 @@ A command-line interface for querying MongoDB Atlas Search.
 
 ## Installation
 
+This project uses a `setup.py` file to make the CLI installable. This allows you to run the CLI from anywhere in your terminal using the `atlas-search` command.
+
 1. Clone the repository:
    ```bash
    git clone https://github.com/your-username/atlas-search-cli.git
    cd atlas-search-cli
    ```
 
-2. Create a virtual environment and install the dependencies:
+2. Create a virtual environment and install the CLI:
    ```bash
    python3 -m venv venv
    source venv/bin/activate
-   pip install -r requirements.txt
+   pip install .
+   ```
+
+   For development, you can install the package in editable mode. This allows you to make changes to the code and have them reflected immediately without reinstalling:
+   ```bash
+   pip install -e .
    ```
 
 ## Usage
@@ -22,8 +29,7 @@ A command-line interface for querying MongoDB Atlas Search.
 To use the CLI, you need to provide a connection string, database name, collection name, and a search query.
 
 ```bash
-source venv/bin/activate
-./main.py "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>"
+atlas-search "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>"
 ```
 
 ### Using a custom aggregation pipeline
@@ -58,8 +64,7 @@ You can also use a custom aggregation pipeline from a JSON file. The file must c
 **Command:**
 
 ```bash
-source venv/bin/activate
-./main.py "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>" --searchAggFile search.json --verbose
+atlas-search "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>" --searchAggFile search.json --verbose
 ```
 
 ### Performing a Vector Search
@@ -71,8 +76,7 @@ To perform a vector search, use the `--vector` flag and specify the field to sea
 **Command:**
 
 ```bash
-source venv/bin/activate
-./main.py "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>" --vector --vectorField "<your_vector_field>"
+atlas-search "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>" --vector --vectorField "<your_vector_field>"
 ```
 
 ### Specifying Search Fields
@@ -82,8 +86,7 @@ By default, the text search will use a wildcard path (`*`). To specify which fie
 **Command:**
 
 ```bash
-source venv/bin/activate
-./main.py "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>" --searchField "title" --searchField "plot"
+atlas-search "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>" --searchField "title" --searchField "plot"
 ```
 
 ### Projecting Fields
@@ -93,8 +96,7 @@ To specify which fields to return in the results, you can use the `--projectFiel
 **Command:**
 
 ```bash
-source venv/bin/activate
-./main.py "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>" --projectField "title" --projectField "plot"
+atlas-search "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>" --projectField "title" --projectField "plot"
 ```
 
 **A Note on Automatic Field Projection:**
@@ -109,8 +111,7 @@ To embed your query using Voyage AI and perform a vector search with the generat
 
 ```bash
 export VOYAGE_API_KEY="<your_voyage_ai_api_key>"
-source venv/bin/activate
-./main.py "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>" --vector --vectorField "<your_vector_field>" --embedWithVoyage
+atlas-search "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>" --vector --vectorField "<your_vector_field>" --embedWithVoyage
 ```
 
 ### Arguments
