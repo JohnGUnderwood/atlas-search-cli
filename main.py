@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 import json
 import sys
@@ -14,6 +15,10 @@ def main():
     parser.add_argument('--vector', action='store_true', help='Perform a vector search')
     parser.add_argument('--vectorField', type=str, help='The field to search for vectors. Required when --vector is used.')
     parser.add_argument('--searchField', type=str, action='append', help='The field to search for text. Can be specified multiple times.')
+    parser.add_argument('--index', type=str, help='The name of the search index to use.')
+    parser.add_argument('--numCandidates', type=int, default=10, help='Number of candidates to consider for approximate vector search.')
+    parser.add_argument('--limit', type=int, default=10, help='Number of results to return.')
+    parser.add_argument('--projectField', type=str, action='append', help='The field to project. Can be specified multiple times.')
     parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
 
     args = parser.parse_args()
@@ -61,22 +66,26 @@ def main():
                 sys.exit(1)
         elif args.vector:
             # Vector search pipeline
+            index = args.index if args.index else "vector_index"
             pipeline = [
                 {
                     "$vectorSearch": {
-                        "index": "vector_index",
+                        "index": index,
                         "query": args.query,
-                        "path": args.vectorField
+                        "path": args.vectorField,
+                        "numCandidates": args.numCandidates,
+                        "limit": args.limit
                     }
                 }
             ]
         else:
             # Default search pipeline
             path = {"wildcard": "*"} if not args.searchField else args.searchField
+            index = args.index if args.index else "default"
             pipeline = [
                 {
                     "$search": {
-                        "index": "default",
+                        "index": index,
                         "text": {
                             "query": args.query,
                             "path": path
@@ -84,6 +93,12 @@ def main():
                     }
                 }
             ]
+
+        if args.projectField:
+            project_stage = {"$project": {}}
+            for field in args.projectField:
+                project_stage["$project"][field] = 1
+            pipeline.append(project_stage)
 
         if args.verbose:
             print("Executing aggregation pipeline:", file=sys.stderr)

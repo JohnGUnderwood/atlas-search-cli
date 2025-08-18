@@ -86,6 +86,21 @@ source venv/bin/activate
 ./main.py "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>" --searchField "title" --searchField "plot"
 ```
 
+### Projecting Fields
+
+To specify which fields to return in the results, you can use the `--projectField` flag multiple times.
+
+**Command:**
+
+```bash
+source venv/bin/activate
+./main.py "your search query" --connectionString "<your_connection_string>" --db "<database_name>" --coll "<collection_name>" --projectField "title" --projectField "plot"
+```
+
+**A Note on Automatic Field Projection:**
+
+The best way to handle field projection without user input is to not project any fields by default. This returns the full document, and you can then use tools like `jq` to parse the JSON and extract the fields you need. This is a common and flexible approach for command-line tools.
+
 ### Arguments
 
 - `query`: The search query string.
@@ -96,4 +111,8 @@ source venv/bin/activate
 - `--vector`: (Optional) Perform a vector search.
 - `--vectorField`: (Optional) The field to search for vectors. Required when `--vector` is used.
 - `--searchField`: (Optional) The field to search for text. Can be specified multiple times.
+- `--projectField`: (Optional) The field to project. Can be specified multiple times.
+- `--index`: (Optional) The name of the search index to use.
+- `--numCandidates`: (Optional) Number of candidates to consider for approximate vector search. Defaults to 10.
+- `--limit`: (Optional) Number of results to return. Defaults to 10.
 - `--verbose`: (Optional) Enable verbose logging to see the executed aggregation pipeline.
