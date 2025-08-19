@@ -22,32 +22,28 @@ jobs:
       run: mkdir -p go/builds
 
     - name: Build and package for Linux (amd64)
+      working-directory: ./go
       run: |
-        cd go
         GOOS=linux GOARCH=amd64 go build -o builds/atlas-search-linux-amd64
         tar -czvf builds/atlas-search-linux-amd64.tar.gz -C builds atlas-search-linux-amd64
-      working-directory: ./go
 
     - name: Build and package for macOS (amd64)
+      working-directory: ./go
       run: |
-        cd go
         GOOS=darwin GOARCH=amd64 go build -o builds/atlas-search-darwin-amd64
         tar -czvf builds/atlas-search-darwin-amd64.tar.gz -C builds atlas-search-darwin-amd64
-      working-directory: ./go
 
     - name: Build and package for macOS (arm64)
+      working-directory: ./go
       run: |
-        cd go
         GOOS=darwin GOARCH=arm64 go build -o builds/atlas-search-darwin-arm64
         tar -czvf builds/atlas-search-darwin-arm64.tar.gz -C builds atlas-search-darwin-arm64
-      working-directory: ./go
 
     - name: Build and package for Windows (amd64)
+      working-directory: ./go
       run: |
-        cd go
         GOOS=windows GOARCH=amd64 go build -o builds/atlas-search-windows-amd64.exe
         zip builds/atlas-search-windows-amd64.zip builds/atlas-search-windows-amd64.exe
-      working-directory: ./go
 
     - name: Create GitHub Release
       id: create_release
