@@ -1,0 +1,63 @@
+name: Release Go CLI
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Triggers on tags like v1.0.0, v1.0.1, etc.
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest # Use a Linux runner for cross-compilation
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22' # Specify your Go version
+
+    - name: Create builds directory
+      run: mkdir -p go/builds
+
+    - name: Build and package for Linux (amd64)
+      run: |
+        cd go
+        GOOS=linux GOARCH=amd64 go build -o builds/atlas-search-linux-amd64
+        tar -czvf builds/atlas-search-linux-amd64.tar.gz -C builds atlas-search-linux-amd64
+      working-directory: ./go
+
+    - name: Build and package for macOS (amd64)
+      run: |
+        cd go
+        GOOS=darwin GOARCH=amd64 go build -o builds/atlas-search-darwin-amd64
+        tar -czvf builds/atlas-search-darwin-amd64.tar.gz -C builds atlas-search-darwin-amd64
+      working-directory: ./go
+
+    - name: Build and package for macOS (arm64)
+      run: |
+        cd go
+        GOOS=darwin GOARCH=arm64 go build -o builds/atlas-search-darwin-arm64
+        tar -czvf builds/atlas-search-darwin-arm64.tar.gz -C builds atlas-search-darwin-arm64
+      working-directory: ./go
+
+    - name: Build and package for Windows (amd64)
+      run: |
+        cd go
+        GOOS=windows GOARCH=amd64 go build -o builds/atlas-search-windows-amd64.exe
+        zip builds/atlas-search-windows-amd64.zip builds/atlas-search-windows-amd64.exe
+      working-directory: ./go
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          go/builds/atlas-search-linux-amd64.tar.gz
+          go/builds/atlas-search-darwin-amd64.tar.gz
+          go/builds/atlas-search-darwin-arm64.tar.gz
+          go/builds/atlas-search-windows-amd64.zip
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

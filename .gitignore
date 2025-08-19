@@ -36,5 +36,5 @@ dist/
 *.egg-info/
 
 # Go-specific ignores
-go-port/atlas-search
-go-port/*.test
+go/builds/*
+go/*.test
