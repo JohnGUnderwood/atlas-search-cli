@@ -45,6 +45,15 @@ def handle_config_set(args):
     save_config(args.name, config)
     print(f"Configuration '{args.name}' saved.")
 
+def handle_config_get(args):
+    config = get_config(args.name)
+    if config:
+        print(f"Configuration '{args.name}':")
+        print(json.dumps(config, indent=2))
+    else:
+        print(f"Configuration '{args.name}' not found.", file=sys.stderr)
+        sys.exit(1)
+
 def handle_config_list(args):
     if not os.path.exists(CONFIGS_DIR):
         print("No configurations saved yet.")
@@ -53,7 +62,7 @@ def handle_config_list(args):
     if not configs:
         print("No configurations saved yet.")
     else:
-        print("Saved configurations:")
+        print(f"Saved configurations in {CONFIGS_DIR}:")
         for name in configs:
             print(f"- {name}")
 
@@ -83,11 +92,14 @@ def handle_lexical_search(args):
                     "path": path
                 }
             }
-        },
-        {
-            "$limit": args.limit
         }
     ]
+
+    limit = args.limit
+    if limit < 0:
+        limit = 10 # Default limit
+
+    pipeline.append({"$limit": limit})
 
     if project_fields:
         project_stage = {"$project": {}}
@@ -152,6 +164,22 @@ def handle_vector_search(args):
         }
     ]
 
+    limit = args.limit
+    if limit < 0:
+        limit = 10 # Default limit
+
+    pipeline = [
+        {
+            "$vectorSearch": {
+                "index": index,
+                query_key: query_vector,
+                "path": field,
+                "numCandidates": args.numCandidates if args.numCandidates else 10 * limit,
+                "limit": limit
+            }
+        }
+    ]
+
     if project_fields:
         project_stage = {"$project": {}}
         for p_field in project_fields:
@@ -207,6 +235,11 @@ def main():
     # Config list sub-subcommand
     config_list_parser = config_subparsers.add_parser('list', help='List saved configurations')
     config_list_parser.set_defaults(func=handle_config_list)
+
+    # Config get sub-subcommand
+    config_get_parser = config_subparsers.add_parser('get', help='Display a named configuration')
+    config_get_parser.add_argument('name', type=str, help='The name of the configuration to display')
+    config_get_parser.set_defaults(func=handle_config_get)
 
     # Lexical search command
     lexical_parser = subparsers.add_parser('lexical', help='Perform a lexical search')

@@ -126,6 +126,18 @@ To see all your saved configurations, use the `config list` command:
 atlas-search config list
 ```
 
+### Getting a Configuration
+
+To display the details of a saved configuration, use the `config get` command:
+
+```bash
+atlas-search config get my_default_config
+```
+
+**Arguments for `config get`:**
+
+- `name`: The name of the configuration to display.
+
 ## Usage
 
 The CLI has two main commands for searching: `lexical` and `vector`.

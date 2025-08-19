@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -186,19 +184,7 @@ func getEmbeddings(query, apiKey, model string) ([]float64, error) {
 	return result.Data[0].Embedding, nil
 }
 
-// parseVectorString parses a comma-separated string of floats into a []float64.
-func parseVectorString(s string) ([]float64, error) {
-	parts := strings.Split(s, ",")
-	vector := make([]float64, len(parts))
-	for i, part := range parts {
-		val, err := strconv.ParseFloat(strings.TrimSpace(part), 64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid vector component '%s': %w", part, err)
-		}
-		vector[i] = val
-	}
-	return vector, nil
-}
+
 
 var rootCmd = &cobra.Command{
 	Use:   "atlas-search",
@@ -265,6 +251,28 @@ var configSetCmd = &cobra.Command{
 	},
 }
 
+var configGetCmd = &cobra.Command{
+	Use:   "get <name>",
+	Short: "Display a named configuration",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		configName := args[0]
+		cfg, err := loadConfig(configName)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			return
+		}
+
+		data, err := json.MarshalIndent(cfg, "", "  ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error marshalling config: %v\n", err)
+			return
+		}
+
+		fmt.Println(string(data))
+	},
+}
+
 var configListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all saved configurations",
@@ -285,7 +293,7 @@ var configListCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println("Available Configurations:")
+		fmt.Println("Available Configurations in " + configDirPath + ":")
 		found := false
 		for _, file := range files {
 			if !file.IsDir() && filepath.Ext(file.Name()) == ".json" {
@@ -369,7 +377,17 @@ var lexicalCmd = &cobra.Command{
 			projectStage = bson.D{{"$project", projectFields}}
 		}
 
-		pipeline := mongo.Pipeline{searchStage, projectStage}
+		limit, _ := cmd.Flags().GetInt("limit")
+		if limit < 0 {
+			limit = 10 // Default limit
+		}
+		pipeline := mongo.Pipeline{searchStage}
+		limitStage := bson.D{{"$limit", limit}}
+		pipeline = append(pipeline, limitStage)
+
+		if len(finalConfig.ProjectField) > 0 {
+			pipeline = append(pipeline, projectStage)
+		}
 
 		if verbose {
 			fmt.Println("MongoDB Aggregation Pipeline:")
@@ -437,13 +455,18 @@ var vectorCmd = &cobra.Command{
 			return
 		}
 
-		if finalConfig.ConnectionString == "" || finalConfig.DB == "" || finalConfig.Coll == "" || finalConfig.Field == nil || len(finalConfig.Field) == 0 {
+		if finalConfig.ConnectionString == "" || finalConfig.DB == "" || finalConfig.Coll == "" || len(finalConfig.Field) == 0 {
 			fmt.Fprintf(os.Stderr, "Error: connectionString, db, coll, and field must be provided either via config or flags.\n")
 			return
 		}
 
 		var embedding []float64
 		embedWithVoyage, _ := cmd.Flags().GetBool("embedWithVoyage")
+
+		if finalConfig.VoyageAPIKey != "" {
+			embedWithVoyage = true
+		}
+
 		if embedWithVoyage {
 			voyageAPIKey := finalConfig.VoyageAPIKey
 			if voyageAPIKey == "" {
@@ -468,17 +491,6 @@ var vectorCmd = &cobra.Command{
 			if verbose {
 				fmt.Printf("Embedding: %v\n", embedding)
 			}
-		} else {
-			// If not embedding, assume the query itself is the vector (e.g., comma-separated floats)
-			var err error
-			embedding, err = parseVectorString(query)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error parsing query as vector: %v\n", err)
-				return
-			}
-			if verbose {
-				fmt.Printf("Parsed Embedding: %v\n", embedding)
-			}
 		}
 
 		client, err := getMongoClient(finalConfig.ConnectionString)
@@ -497,6 +509,10 @@ var vectorCmd = &cobra.Command{
 		numCandidates, _ := cmd.Flags().GetInt("numCandidates")
 		limit, _ := cmd.Flags().GetInt("limit")
 
+		if limit < 0 {
+			limit = 10 // Default limit
+		}
+
 		// Apply numCandidates logic: 10x limit if limit is set and numCandidates is default
 		if cmd.Flags().Changed("limit") && !cmd.Flags().Changed("numCandidates") {
 			numCandidates = limit * 10
@@ -506,10 +522,16 @@ var vectorCmd = &cobra.Command{
 		vectorSearchStage := bson.D{{"$vectorSearch", bson.D{
 			{"index", finalConfig.Index},
 			{"path", finalConfig.Field[0]}, // Assuming single field for vector search as per README example
-			{"queryVector", embedding},
-			{"numCandidates", numCandidates},
-			{"limit", limit},
 		}}}
+
+		if embedWithVoyage {
+			vectorSearchStage[0].Value = append(vectorSearchStage[0].Value.(bson.D), bson.E{"queryVector", embedding})
+		} else {
+			vectorSearchStage[0].Value = append(vectorSearchStage[0].Value.(bson.D), bson.E{"query", query})
+		}
+
+		vectorSearchStage[0].Value = append(vectorSearchStage[0].Value.(bson.D), bson.E{"numCandidates", numCandidates})
+		vectorSearchStage[0].Value = append(vectorSearchStage[0].Value.(bson.D), bson.E{"limit", limit})
 
 		// Build the $project stage
 		projectStage := bson.D{{"$project", bson.D{}}}
@@ -564,6 +586,7 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 	configCmd.AddCommand(configSetCmd)
 	configCmd.AddCommand(configListCmd)
+	configCmd.AddCommand(configGetCmd)
 	rootCmd.AddCommand(lexicalCmd)
 	rootCmd.AddCommand(vectorCmd)
 
@@ -582,6 +605,7 @@ func init() {
 	lexicalCmd.Flags().StringArray("field", []string{}, "The field to search. Can be specified multiple times. Defaults to wildcard (*).")
 	lexicalCmd.Flags().StringArray("projectField", []string{}, "The field to project. Can be specified multiple times.")
 	lexicalCmd.Flags().String("index", "default", "The name of the search index to use. Defaults to default.")
+	lexicalCmd.Flags().Int("limit", 10, "Number of results to return.")
 	lexicalCmd.Flags().String("connectionString", "", "MongoDB connection string. Overrides the configured value.")
 	lexicalCmd.Flags().String("db", "", "Database name. Overrides the configured value.")
 	lexicalCmd.Flags().String("coll", "", "Collection name. Overrides the configured value.")
@@ -589,8 +613,7 @@ func init() {
 
 	// Add flags for vectorCmd
 	vectorCmd.Flags().String("config", "", "The name of the configuration to use.")
-	vectorCmd.Flags().String("field", "", "The field to search for vectors. This is a required argument.")
-	vectorCmd.MarkFlagRequired("field") // Mark field as required for vectorCmd
+	vectorCmd.Flags().StringArray("field", []string{}, "The field to search for vectors. This is a required argument.")
 	vectorCmd.Flags().StringArray("projectField", []string{}, "The field to project. Can be specified multiple times.")
 	vectorCmd.Flags().String("index", "vector_index", "The name of the search index to use. Defaults to vector_index.")
 	vectorCmd.Flags().Int("numCandidates", 100, "Number of candidates to consider for approximate vector search.")
