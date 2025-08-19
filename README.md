@@ -6,8 +6,37 @@ A command-line interface for querying MongoDB Atlas Search. Written by Google Ge
 You can download compiled binaries or build from source.
 
 ### Download
-The binaries are built from the Go source code and you can access them from the GitHub releases:
-https://github.com/JohnGUnderwood/atlas-search-cli/releases 
+The binaries are built from the Go source code.
+1. Download the binary for your operating system from: https://github.com/JohnGUnderwood/atlas-search-cli/releases
+2. Extract the downloaded tar
+3. Rename the binary file to 'atlas-search'
+4. Modify the binary permissions to be executable
+5. You should now be able to execute from the command line using `atlas-search` or `.\atlas-search` or some variant
+
+#### Security Permissions for MacOS
+I don't have $99 a year to spend on Apple Developer Program so this code is notarized. These are your options to circumvent Apple Gatekeeper (if you trust me):
+
+##### Bypass via Right-Click:
+ * Locate the atlas-search binary in your Finder.
+ * Right-click (or Control-click) on the binary.
+ * Select "Open" from the contextual menu.
+ * A dialog box will appear, asking if you're sure you want to open it. Click "Open" again.
+ * This will run the application and usually adds an exception for it, allowing subsequent runs without the warning (unless the quarantine attribute is re-applied).
+
+##### Bypass via System Settings:
+ * Attempt to open the binary normally (double-click). You'll see the "unidentified developer" warning.
+ * Go to System Settings (or System Preferences on older macOS versions).
+ * Navigate to Privacy & Security.
+ * Scroll down to the "Security" section. You should see a message like "atlas-search was blocked from use because it is not from an identified developer."
+ * Click the "Open Anyway" button next to this message.
+ * Confirm your choice in the subsequent dialog.
+
+##### Remove Quarantine Attribute (Command Line):
+You can manually remove the quarantine attribute from the binary using the xattr command in your terminal.
+
+`xattr -d com.apple.quarantine /path/to/your/atlas-search`
+
+Replace /path/to/your/atlas-search with the actual path to your downloaded executable. After running this, you should be able to execute the binary normally.
 
 ### Building From Source
 
