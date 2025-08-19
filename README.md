@@ -3,10 +3,17 @@
 A command-line interface for querying MongoDB Atlas Search. Written by Google Gemini CLI. Guided by John Underwood.
 
 ## Installation
+You can download compiled binaries or build from source.
+
+### Download
+The binaries are built from the Go source code and you can access them from the GitHub releases:
+https://github.com/JohnGUnderwood/atlas-search-cli/releases 
+
+### Building From Source
 
 This CLI is available in two variants: Python and Go.
 
-### Python Variant
+#### Python Variant
 
 This project uses a `setup.py` file to make the CLI installable. This allows you to run the CLI from anywhere in your terminal using the `atlas-search` command.
 
@@ -28,7 +35,7 @@ This project uses a `setup.py` file to make the CLI installable. This allows you
    pip install -e .
    ```
 
-### Go Variant
+#### Go Variant
 
 The Go variant provides a single compiled executable.
 
