@@ -8,6 +8,8 @@ on:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest # Use a Linux runner for cross-compilation
+    permissions:
+      contents: write # Grant write permissions for creating/updating releases
 
     steps:
     - name: Checkout code
