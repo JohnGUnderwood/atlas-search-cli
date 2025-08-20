@@ -478,7 +478,7 @@ var vectorCmd = &cobra.Command{
 			}
 
 			voyageModel, _ := cmd.Flags().GetString("voyageModel")
-			if voyageModel == "" {
+			if !cmd.Flags().Changed("voyageModel") {
 				voyageModel = finalConfig.VoyageModel
 			}
 
