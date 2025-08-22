@@ -1,0 +1,10 @@
+{
+    "compound": {
+        "minimumShouldMatch": 1,
+        "should": [
+            { "phrase": { "score": { "boost": {"value": 3 } } }},
+            { "text": { "path": "description", "score": { "boost": {"value": 2 } } }},
+            { "text": {} }
+    ]
+  }
+}

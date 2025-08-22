@@ -165,10 +165,68 @@ atlas-search lexical "your search query"
 - `--field`: The field to search. Can be specified multiple times. Defaults to wildcard (`*`).
 - `--projectField`: The field to project. Can be specified multiple times. If a configuration is used, these fields will be added to any `projectField` values defined in the configuration.
 - `--index`: The name of the search index to use. Defaults to `default`.
+- `--searchStageFi;e`: Path to a `$search` definition json file. Inserts query string into the file.
 - `--connectionString`: MongoDB connection string. Overrides the configured value.
 - `--db`: Database name. Overrides the configured value.
 - `--coll`: Collection name. Overrides the configured value.
 - `--verbose`: Enable verbose logging.
+
+#### `--searchStageFile`
+Path to a custom `$search` stage definition JSON file. When you pass this flag:
+
+- The CLI will load your JSON and look for any of the following operators anywhere in the document: `text`, `phrase`, `autocomplete`.
+- It will **recursively** inject your `query` string into every matching operator’s `"query"` field.
+- If an operator is missing a `"path"` key, it will add `"path": <your field or default wildcard>`.
+- If your top‐level object has no `"index"`, it will add the chosen index name.
+
+This makes it easy to provide a fully custom `$search` stage—your file can include nesting, compound operators, or any Atlas Search syntax. The CLI handles inserting your query and path in the right places.
+
+Example `search.json`:
+
+```json
+{
+    "compound": {
+        "minimumShouldMatch": 1,
+        "should": [
+            { "phrase": { "score": { "boost": {"value": 3 } } }},
+            { "text": { "path": "description", "score": { "boost": {"value": 2 } } }},
+            { "text": {} }
+    ]
+  }
+}
+```
+
+Running
+```bash
+atlas-search-cli lexical "mongodb" \
+  --searchStageFile mySearchStage.json \
+  --field title --index myIndex
+```
+
+Will produce an aggregation stage equivalent to:
+```json
+{
+   "$search":{
+      "index":"myIndex",
+      "compoun":{
+         "minimumShouldMatch":1,
+         "should":[
+            { "phrase":{
+                  "query":"mongodb","path":"title",
+                  "score": { "boost": {"value": 3 } }
+               }
+            },
+            { "text": {
+                  "query":"mongodb", "path": "description",
+                  "score": { "boost": {"value": 2 } }
+               }
+            },
+            { "text": {"query":"mongodb","path":"title"} }
+         ]
+      }
+   }
+}
+```
 
 ### Vector Search
 

@@ -183,6 +183,29 @@ func getEmbeddings(query, apiKey, model string) ([]float64, error) {
 
 	return result.Data[0].Embedding, nil
 }
+// updateSearchQueries recursively injects the query and path into any allowed operators within a nested JSON structure.
+func updateSearchQueries(obj interface{}, query string, path []string, allowedKeys map[string]struct{}) {
+   switch t := obj.(type) {
+   case map[string]interface{}:
+	   for k, v := range t {
+		   if _, ok := allowedKeys[k]; ok {
+			   if m, ok2 := v.(map[string]interface{}); ok2 {
+				   m["query"] = query
+				   if _, has := m["path"]; !has {
+					   m["path"] = path
+				   }
+				   updateSearchQueries(m, query, path, allowedKeys)
+			   }
+		   } else {
+			   updateSearchQueries(v, query, path, allowedKeys)
+		   }
+	   }
+   case []interface{}:
+	   for _, item := range t {
+		   updateSearchQueries(item, query, path, allowedKeys)
+	   }
+   }
+}
 
 
 
@@ -356,15 +379,44 @@ var lexicalCmd = &cobra.Command{
 
 		collection := client.Database(finalConfig.DB).Collection(finalConfig.Coll)
 
-		// Build the $search stage
-		searchPath := finalConfig.Field
-		if len(searchPath) == 0 {
-			searchPath = []string{"*"} // Default to wildcard if no field is specified
-		}
-		searchStage := bson.D{{"$search", bson.D{
-			{"index", finalConfig.Index},
-			{"text", bson.D{{"query", query}, {"path", searchPath}}}},
-		}}
+	   var pipeline mongo.Pipeline
+	   // Handle custom searchStageFile
+	   if searchFile, _ := cmd.Flags().GetString("searchStageFile"); searchFile != "" {
+		   data, err := os.ReadFile(searchFile)
+		   if err != nil {
+			   fmt.Fprintf(os.Stderr, "Error reading search stage file: %v\n", err)
+			   return
+		   }
+		   var raw interface{}
+		   if err := json.Unmarshal(data, &raw); err != nil {
+			   fmt.Fprintf(os.Stderr, "Error parsing JSON from %s: %v\n", searchFile, err)
+			   return
+		   }
+		   // Recursively inject query and path
+		   allowed := map[string]struct{}{"text":{}, "phrase":{}, "autocomplete":{}, "wildcard":{}}
+		   path := finalConfig.Field
+		   if len(path) == 0 {
+			   path = []string{"*"}
+		   }
+		   updateSearchQueries(raw, query, path, allowed)
+		   // Ensure top-level index
+		   if m, ok := raw.(map[string]interface{}); ok {
+			   if _, has := m["index"]; !has {
+				   m["index"] = finalConfig.Index
+			   }
+		   }
+		   pipeline = mongo.Pipeline{bson.D{{"$search", raw}}}
+	   } else {
+		   // Build the $search stage
+		   searchPath := finalConfig.Field
+		   if len(searchPath) == 0 {
+			   searchPath = []string{"*"} // Default to wildcard
+		   }
+		   pipeline = mongo.Pipeline{bson.D{{"$search", bson.D{
+			   {"index", finalConfig.Index},
+			   {"text", bson.D{{"query", query}, {"path", searchPath}}}},
+		   }}}
+	   }
 
 		// Build the $project stage
 		projectStage := bson.D{{"$project", bson.D{}}}
@@ -373,17 +425,15 @@ var lexicalCmd = &cobra.Command{
 			for _, field := range finalConfig.ProjectField {
 				projectFields = append(projectFields, bson.E{Key: field, Value: 1})
 			}
-			projectFields = append(projectFields, bson.E{Key: "_id", Value: 0}) // Exclude _id by default
 			projectStage = bson.D{{"$project", projectFields}}
 		}
 
-		limit, _ := cmd.Flags().GetInt("limit")
-		if limit < 0 {
-			limit = 10 // Default limit
-		}
-		pipeline := mongo.Pipeline{searchStage}
-		limitStage := bson.D{{"$limit", limit}}
-		pipeline = append(pipeline, limitStage)
+	   // Append limit stage
+	   limit, _ := cmd.Flags().GetInt("limit")
+	   if limit < 0 {
+		   limit = 10 // Default limit
+	   }
+	   pipeline = append(pipeline, bson.D{{"$limit", limit}})
 
 		if len(finalConfig.ProjectField) > 0 {
 			pipeline = append(pipeline, projectStage)
@@ -540,7 +590,6 @@ var vectorCmd = &cobra.Command{
 			for _, field := range finalConfig.ProjectField {
 				projectFields = append(projectFields, bson.E{Key: field, Value: 1})
 			}
-			projectFields = append(projectFields, bson.E{Key: "_id", Value: 0}) // Exclude _id by default
 			projectStage = bson.D{{"$project", projectFields}}
 		}
 
@@ -610,6 +659,8 @@ func init() {
 	lexicalCmd.Flags().String("db", "", "Database name. Overrides the configured value.")
 	lexicalCmd.Flags().String("coll", "", "Collection name. Overrides the configured value.")
 	lexicalCmd.Flags().Bool("verbose", false, "Enable verbose logging.")
+	// Path to a custom $search stage definition JSON file. Recursively injects query and path into allowed operators.
+	lexicalCmd.Flags().String("searchStageFile", "", "Path to a $search definition JSON file. Inserts query string into the file.")
 
 	// Add flags for vectorCmd
 	vectorCmd.Flags().String("config", "", "The name of the configuration to use.")

@@ -66,6 +66,23 @@ def handle_config_list(args):
         for name in configs:
             print(f"- {name}")
 
+def _update_search_queries(obj, query, path, allowed_keys):
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            # if this key is one of our operators, update it
+            if key in allowed_keys and isinstance(value, dict):
+                value["query"] = query
+                if "path" not in value:
+                    value["path"] = path
+                # recurse into the operator in case it has nested operators
+                _update_search_queries(value, query, path, allowed_keys)
+            else:
+                _update_search_queries(value, query, path, allowed_keys)
+    elif isinstance(obj, list):
+        for item in obj:
+            _update_search_queries(item, query, path, allowed_keys)
+
+
 def handle_lexical_search(args):
     current_config = get_config(args.config) if args.config else {}
 
@@ -83,17 +100,32 @@ def handle_lexical_search(args):
     cli_project_fields = args.projectField if args.projectField else []
     project_fields = list(set(config_project_fields + cli_project_fields))
 
-    pipeline = [
-        {
-            "$search": {
-                "index": index,
-                "text": {
-                    "query": args.query,
-                    "path": path
+    if args.searchStageFile:
+        pipeline = []
+        try:
+            with open(args.searchStageFile, 'r') as f:
+                search_stage = json.load(f)
+                allowed_keys = {"text", "phrase", "autocomplete", "wildcard"}  # your allowed operators
+                _update_search_queries(search_stage, args.query, path, allowed_keys)
+                if "index" not in search_stage:
+                    search_stage["index"] = index
+                pipeline.append({"$search": search_stage})
+        except Exception as e:
+            print(f"Error reading search stage file: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        pipeline = [
+            {
+                "$search": {
+                    "index": index,
+                    "text": {
+                        "query": args.query,
+                        "path": path
+                    }
                 }
             }
-        }
-    ]
+        ]
+    
 
     limit = args.limit
     if limit < 0:
@@ -252,6 +284,7 @@ def main():
     lexical_parser.add_argument('--connectionString', type=str, help='MongoDB connection string')
     lexical_parser.add_argument('--db', type=str, help='Database name')
     lexical_parser.add_argument('--coll', type=str, help='Collection name')
+    lexical_parser.add_argument('--searchStageFile', type=str, help='Path to a $search definition json file. Inserts query string into the file.')
     lexical_parser.add_argument('--verbose', action='store_true', help='Enable verbose logging')
     lexical_parser.set_defaults(func=handle_lexical_search)
 
